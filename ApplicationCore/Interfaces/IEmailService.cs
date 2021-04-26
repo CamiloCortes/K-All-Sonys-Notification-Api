@@ -1,4 +1,4 @@
-﻿using K_All_Sonys_Notification_Api.Entities;
+﻿using K_All_Sonys_Notification_Api.DTO;
 using MimeKit;
 using System;
 using System.Collections.Generic;
@@ -9,7 +9,7 @@ namespace K_All_Sonys_Notification_Api.Interfaces
 {
     public interface IEmailService
     {
-        public string SendEmail(EmailMessage message);
-        public MimeMessage CreateMimeMessageFromEmailMessage(EmailMessage message);
+        public Task<string> SendEmail(EmailMessage message);
+        public Task<MimeMessage> CreateMimeMessageFromEmailMessage(EmailMessage message);
     }
 }

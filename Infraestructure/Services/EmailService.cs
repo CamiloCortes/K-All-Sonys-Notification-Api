@@ -1,4 +1,4 @@
-﻿using K_All_Sonys_Notification_Api.Entities;
+﻿using K_All_Sonys_Notification_Api.DTO;
 using K_All_Sonys_Notification_Api.Interfaces;
 using MailKit.Net.Smtp;
 using MimeKit;
@@ -19,23 +19,23 @@ namespace K_All_Sonys_Notification_Api.Services
             _notificationMetadata = notificationMetadata;
             _smtpClient = smtpClient;
         }
-        public MimeMessage CreateMimeMessageFromEmailMessage(EmailMessage message)
+        public async Task<MimeMessage> CreateMimeMessageFromEmailMessage(EmailMessage message)
         {
 
             var mimeMessage = new MimeMessage();
-            mimeMessage.From.Add(new MailboxAddress("Self", message.Sender));
-            mimeMessage.To.Add(new MailboxAddress("Self", message.Reciever));
+            mimeMessage.From.Add(new MailboxAddress("K_All_Sonys", message.Sender));
+            mimeMessage.To.Add(new MailboxAddress("K_All_Sonys", message.Reciever));
             mimeMessage.Subject = message.Subject;
             mimeMessage.Body = new TextPart(MimeKit.Text.TextFormat.Text)
             { Text = message.Content };
-            return mimeMessage;
+            return await Task.FromResult(mimeMessage);
         }
 
-        public string SendEmail(EmailMessage message)
+        public async Task<string> SendEmail(EmailMessage message)
         {
             try
             {
-                var mimeMessage = CreateMimeMessageFromEmailMessage(message);
+                var mimeMessage = await CreateMimeMessageFromEmailMessage(message);
 
 
                 _smtpClient.Connect(_notificationMetadata.SmtpServer,
@@ -44,7 +44,8 @@ namespace K_All_Sonys_Notification_Api.Services
                 _notificationMetadata.Password);
                 _smtpClient.Send(mimeMessage);
                 _smtpClient.Disconnect(true);
-                return "Email sent successfully";
+
+                return await Task.FromResult("Email sent successfully");
             }
             catch (Exception)
             {

@@ -1,4 +1,4 @@
-﻿using K_All_Sonys_Notification_Api.Entities;
+﻿using K_All_Sonys_Notification_Api.DTO;
 using K_All_Sonys_Notification_Api.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -21,13 +21,11 @@ namespace K_All_Sonys_Notification_Api.Controllers
         }
 
         [Consumes("application/json")]
-        [Route("sendEmail")]
+        [Route("email")]
         [HttpPost]
-        public IActionResult sendEmail(EmailMessage message)
+        public async Task<IActionResult> sendEmail(EmailMessage message)
         {
-
-
-            return Ok(_emailService.SendEmail(message));
+            return Ok( await _emailService.SendEmail(message));
         }
     }
 }

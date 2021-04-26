@@ -1,4 +1,4 @@
-using K_All_Sonys_Notification_Api.Entities;
+using K_All_Sonys_Notification_Api.DTO;
 using K_All_Sonys_Notification_Api.Interfaces;
 using K_All_Sonys_Notification_Api.Services;
 using MailKit.Net.Smtp;

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace K_All_Sonys_Notification_Api.Entities
+namespace K_All_Sonys_Notification_Api.DTO
 {
     public class NotificationMetadata 
     {
