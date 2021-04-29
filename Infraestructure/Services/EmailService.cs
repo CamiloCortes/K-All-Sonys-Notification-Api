@@ -1,5 +1,6 @@
-﻿using K_All_Sonys_Notification_Api.DTO;
-using K_All_Sonys_Notification_Api.Interfaces;
+﻿using ApplicationCore.DTO;
+using ApplicationCore.Interfaces;
+using K_All_Sonys_Notification_Api.DTO;
 using MailKit.Net.Smtp;
 using MimeKit;
 using System;
@@ -7,17 +8,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace K_All_Sonys_Notification_Api.Services
+namespace Infraestructure.Services
 {
     public class EmailService : IEmailService
     {
         private readonly NotificationMetadata _notificationMetadata;
         private readonly SmtpClient _smtpClient;
+        private readonly INotIficationService _notIficationService;
+        
 
-        public EmailService(NotificationMetadata notificationMetadata, SmtpClient smtpClient)
+        public EmailService(INotIficationService notificationService, NotificationMetadata notificationMetadata, SmtpClient smtpClient)
         {
             _notificationMetadata = notificationMetadata;
             _smtpClient = smtpClient;
+            _notIficationService = notificationService;
         }
         public async Task<MimeMessage> CreateMimeMessageFromEmailMessage(EmailMessage message)
         {
@@ -31,10 +35,12 @@ namespace K_All_Sonys_Notification_Api.Services
             return await Task.FromResult(mimeMessage);
         }
 
-        public async Task<string> SendEmail(EmailMessage message)
+        public async Task<NotificationResponse> SendEmail(EmailMessage message)
         {
+            var notificationRespose = new NotificationResponse();
             try
             {
+                
                 var mimeMessage = await CreateMimeMessageFromEmailMessage(message);
 
 
@@ -44,15 +50,27 @@ namespace K_All_Sonys_Notification_Api.Services
                 _notificationMetadata.Password);
                 _smtpClient.Send(mimeMessage);
                 _smtpClient.Disconnect(true);
+                notificationRespose.status = "0";
 
-                return await Task.FromResult("Email sent successfully");
+
+
+                
             }
             catch (Exception)
             {
-
-                return "Email sent Error";
+                notificationRespose.status = "1";
             }
 
+            var newNotification = new ApplicationCore.DTO.Notification
+            {
+                Message = message.Content,
+                status = notificationRespose.status,
+                Type = "E"
+            };
+
+            await _notIficationService.CreateNotificationAsync(newNotification);
+
+            return notificationRespose;
 
         }
     }

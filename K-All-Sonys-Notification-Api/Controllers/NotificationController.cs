@@ -1,5 +1,5 @@
 ﻿using K_All_Sonys_Notification_Api.DTO;
-using K_All_Sonys_Notification_Api.Interfaces;
+using ApplicationCore.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;

@@ -1,4 +1,4 @@
-﻿using K_All_Sonys_Notification_Api.Interfaces;
+﻿using ApplicationCore.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;

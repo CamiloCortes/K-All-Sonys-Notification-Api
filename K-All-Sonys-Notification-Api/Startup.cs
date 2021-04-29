@@ -1,6 +1,6 @@
 using K_All_Sonys_Notification_Api.DTO;
-using K_All_Sonys_Notification_Api.Interfaces;
-using K_All_Sonys_Notification_Api.Services;
+using ApplicationCore.Interfaces;
+using Infraestructure.Services;
 using MailKit.Net.Smtp;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -14,7 +14,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
+using ApplicationCore.Entities;
+using Infraestructure.Repositories;
+using Infraestructure.Contexts;
+using Microsoft.EntityFrameworkCore;
 namespace K_All_Sonys_Notification_Api
 {
     public class Startup
@@ -29,6 +32,7 @@ namespace K_All_Sonys_Notification_Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDbContext<NotificationContext> (options => options.UseMySql(Configuration.GetConnectionString("DbNotifications")).EnableDetailedErrors(true));
             services.AddControllers();
             services.AddTransient<IEmailService, EmailService>();
             var notificationMetadata =
@@ -36,6 +40,8 @@ namespace K_All_Sonys_Notification_Api
            Get<NotificationMetadata>();
             services.AddSingleton(notificationMetadata);
             services.AddSingleton(new SmtpClient());
+            services.AddScoped<IAsyncRepository<Notification>, NotificationsRepository>();
+            services.AddScoped<INotIficationService, NotificationService>();
 
             services.AddSwaggerGen(c =>
             {
