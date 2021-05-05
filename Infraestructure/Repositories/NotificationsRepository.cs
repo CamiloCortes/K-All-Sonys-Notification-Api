@@ -1,4 +1,4 @@
-﻿using ApplicationCore.Entities;
+﻿using KAllSonysNotificationApi.ApplicationCore.Entities;
 using ApplicationCore.Interfaces;
 using Infraestructure.Contexts;
 using System;
@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Infraestructure.Repositories
+namespace KAllSonysNotificationApi.Infraestructure.Repositories
 {
     public class NotificationsRepository : IAsyncRepository<Notification>
     {

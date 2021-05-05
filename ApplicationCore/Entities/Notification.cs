@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ApplicationCore.Entities
+namespace KAllSonysNotificationApi.ApplicationCore.Entities
 {
     public class Notification
     {
@@ -10,5 +10,7 @@ namespace ApplicationCore.Entities
         public string Type { get; set; }
         public string Message { get; set; }
         public string Status { get; set; }
+        public string Reciever { get; set; }
+        public DateTime? DateNotification { get; set; }
     }
 }

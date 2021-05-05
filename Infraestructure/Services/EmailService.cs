@@ -40,7 +40,7 @@ namespace Infraestructure.Services
             var notificationRespose = new NotificationResponse();
             try
             {
-                
+
                 var mimeMessage = await CreateMimeMessageFromEmailMessage(message);
 
 
@@ -50,22 +50,31 @@ namespace Infraestructure.Services
                 _notificationMetadata.Password);
                 _smtpClient.Send(mimeMessage);
                 _smtpClient.Disconnect(true);
-                notificationRespose.status = "0";
+                notificationRespose.statusCode = "0";
+                notificationRespose.message = "Email sent successfully";
 
 
 
-                
+
+
             }
             catch (Exception)
             {
-                notificationRespose.status = "1";
+                
+                notificationRespose.statusCode = "1";
+                notificationRespose.message = "Email sent Error";
+            }
+            finally {
+                _smtpClient.Disconnect(true);
             }
 
             var newNotification = new ApplicationCore.DTO.Notification
             {
                 Message = message.Content,
-                status = notificationRespose.status,
-                Type = "E"
+                status = notificationRespose.statusCode,
+                Type = "E",
+                Reciever = message.Reciever,
+                DateNotification = DateTime.UtcNow.ToLocalTime()
             };
 
             await _notIficationService.CreateNotificationAsync(newNotification);

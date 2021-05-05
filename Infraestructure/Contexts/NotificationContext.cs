@@ -1,4 +1,4 @@
-﻿using ApplicationCore.Entities;
+﻿using KAllSonysNotificationApi.ApplicationCore.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;

@@ -10,5 +10,7 @@ namespace ApplicationCore.DTO
             public string Type { get; set; }
             public string Message { get; set; }
             public string status { get; set; }
+            public string Reciever { get; set; }
+            public DateTime? DateNotification { get; set; }
     }
 }

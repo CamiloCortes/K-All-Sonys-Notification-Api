@@ -8,7 +8,7 @@ using System;
 using System.Threading.Tasks;
 using Infraestructure.Contexts;
 using Microsoft.EntityFrameworkCore;
-using Infraestructure.Repositories;
+using KAllSonysNotificationApi.Infraestructure.Repositories;
 
 namespace K_All_Sonys_Notification_Api_Test
 {
@@ -59,7 +59,7 @@ namespace K_All_Sonys_Notification_Api_Test
             emailMessage.Subject = "UNIT TEST";
             emailMessage.Content = "UNIT TEST";
             var notificationResponse = await _emailService.SendEmail(emailMessage);
-            Assert.AreEqual( "0", notificationResponse.status);
+            Assert.AreEqual( "0", notificationResponse.statusCode);
         }
     }
 }

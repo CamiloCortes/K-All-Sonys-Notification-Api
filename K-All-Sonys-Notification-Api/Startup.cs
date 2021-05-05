@@ -14,8 +14,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using ApplicationCore.Entities;
-using Infraestructure.Repositories;
+using KAllSonysNotificationApi.ApplicationCore.Entities;
+using KAllSonysNotificationApi.Infraestructure.Repositories;
 using Infraestructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 namespace K_All_Sonys_Notification_Api

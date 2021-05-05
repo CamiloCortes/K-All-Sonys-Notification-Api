@@ -9,19 +9,21 @@ namespace Infraestructure.Services
 {
     public class NotificationService : INotIficationService
     {
-        private IAsyncRepository<ApplicationCore.Entities.Notification> _repository;
+        private IAsyncRepository<KAllSonysNotificationApi.ApplicationCore.Entities.Notification> _repository;
 
-        public NotificationService(IAsyncRepository<ApplicationCore.Entities.Notification> repository) {
+        public NotificationService(IAsyncRepository<KAllSonysNotificationApi.ApplicationCore.Entities.Notification> repository) {
 
             _repository = repository;
         }
         public async Task<Notification> CreateNotificationAsync(Notification notification)
         {
-            var newNotification = new ApplicationCore.Entities.Notification
+            var newNotification = new KAllSonysNotificationApi.ApplicationCore.Entities.Notification
             {
                 Message = notification.Message,
                 Status = notification.status,
-                Type = notification.Type
+                Type = notification.Type,
+                Reciever = notification.Reciever,
+                DateNotification = notification.DateNotification
             };
 
             newNotification = await _repository.AddAsync(newNotification);

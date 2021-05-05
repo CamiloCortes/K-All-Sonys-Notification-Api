@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ApplicationCore.DTO;
 
 namespace K_All_Sonys_Notification_Api.Controllers
 {
@@ -22,10 +23,21 @@ namespace K_All_Sonys_Notification_Api.Controllers
 
         [Consumes("application/json")]
         [Route("email")]
+        [ProducesResponseType(typeof(NotificationResponse), 200)]
+        [ProducesResponseType(500)]
         [HttpPost]
         public async Task<IActionResult> sendEmail(EmailMessage message)
         {
             return Ok( await _emailService.SendEmail(message));
+        }
+
+        [Consumes("application/json")]
+        [Route("Health")]
+        [ProducesResponseType(typeof(string), 200)]
+        [HttpGet]
+        public string checkApi() {
+
+            return "api OK";
         }
     }
 }
