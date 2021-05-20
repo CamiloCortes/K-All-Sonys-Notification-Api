@@ -3,9 +3,12 @@ using ApplicationCore.Interfaces;
 using K_All_Sonys_Notification_Api.DTO;
 using MailKit.Net.Smtp;
 using MimeKit;
+using Polly;
+using Polly.CircuitBreaker;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Infraestructure.Services
@@ -15,7 +18,12 @@ namespace Infraestructure.Services
         private readonly NotificationMetadata _notificationMetadata;
         private readonly SmtpClient _smtpClient;
         private readonly INotIficationService _notIficationService;
-        
+
+        private static readonly AsyncCircuitBreakerPolicy<bool>
+                         basicCircuitBreakerPolicy = Policy.HandleResult<bool>(r => r == false)
+                             .CircuitBreakerAsync(handledEventsAllowedBeforeBreaking: 2, durationOfBreak: TimeSpan.FromSeconds(20));
+
+
 
         public EmailService(INotIficationService notificationService, NotificationMetadata notificationMetadata, SmtpClient smtpClient)
         {
@@ -43,29 +51,46 @@ namespace Infraestructure.Services
 
                 var mimeMessage = await CreateMimeMessageFromEmailMessage(message);
 
+                try {
+                    await _smtpClient.ConnectAsync(_notificationMetadata.SmtpServer,
+                    _notificationMetadata.Port, false);
+                    await _smtpClient.AuthenticateAsync(_notificationMetadata.UserName,
+                    _notificationMetadata.Password);
 
-                _smtpClient.Connect(_notificationMetadata.SmtpServer,
-                _notificationMetadata.Port, false);
-                _smtpClient.Authenticate(_notificationMetadata.UserName,
-                _notificationMetadata.Password);
-                _smtpClient.Send(mimeMessage);
-                _smtpClient.Disconnect(true);
-                notificationRespose.statusCode = "0";
-                notificationRespose.message = "Email sent successfully";
+                }
+                catch (Exception) { 
 
+                }
+                await basicCircuitBreakerPolicy.ExecuteAsync(async () =>
+                 {
+                     return await Task.FromResult(_smtpClient.IsConnected);
+                 });
 
+                if (basicCircuitBreakerPolicy.CircuitState == 0)
+                {
+                    await _smtpClient.SendAsync(mimeMessage);
+                    await _smtpClient.DisconnectAsync(true);
 
+                    notificationRespose.statusCode = "0";
+                    notificationRespose.message = "Email sent successfully";
+                }
+                else
+                {
 
+                    notificationRespose.statusCode = "1";
+                    notificationRespose.message = "Email sent Error";
+                }
 
             }
             catch (Exception)
             {
-                
+
                 notificationRespose.statusCode = "1";
                 notificationRespose.message = "Email sent Error";
             }
-            finally {
-                _smtpClient.Disconnect(true);
+            finally
+            {
+                await _smtpClient.DisconnectAsync(true);
             }
 
             var newNotification = new ApplicationCore.DTO.Notification
@@ -77,10 +102,22 @@ namespace Infraestructure.Services
                 DateNotification = DateTime.UtcNow.ToLocalTime()
             };
 
-            await _notIficationService.CreateNotificationAsync(newNotification);
+             await persistNotification(newNotification);
 
             return notificationRespose;
 
+        }
+
+        public async Task<Notification> persistNotification(ApplicationCore.DTO.Notification newNotification) {
+            try
+            {
+                newNotification = await _notIficationService.CreateNotificationAsync(newNotification);
+            }
+            catch (Exception ex) {
+
+                Console.WriteLine(ex.Message);
+            }
+            return newNotification;
         }
     }
 }
