@@ -21,7 +21,7 @@ namespace Infraestructure.Services
 
         private static readonly AsyncCircuitBreakerPolicy<bool>
                          basicCircuitBreakerPolicy = Policy.HandleResult<bool>(r => r == false)
-                             .CircuitBreakerAsync(handledEventsAllowedBeforeBreaking: 2, durationOfBreak: TimeSpan.FromSeconds(20));
+                             .CircuitBreakerAsync(handledEventsAllowedBeforeBreaking: 2, durationOfBreak: TimeSpan.FromMinutes(5));
 
 
 
