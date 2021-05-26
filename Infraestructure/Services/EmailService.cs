@@ -5,6 +5,7 @@ using MailKit.Net.Smtp;
 using MimeKit;
 using Polly;
 using Polly.CircuitBreaker;
+using Polly.Retry;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,10 +19,24 @@ namespace Infraestructure.Services
         private readonly NotificationMetadata _notificationMetadata;
         private readonly SmtpClient _smtpClient;
         private readonly INotIficationService _notIficationService;
+        private static readonly AsyncCircuitBreakerPolicy _circuitBreakerPolicy = Policy.Handle<Exception>()
+                .CircuitBreakerAsync(2, TimeSpan.FromMinutes(5),
+                (exception, timeSpan) => {
+                    Console.WriteLine("OnBreaK:  Circuito roto");
+                },
+                () =>
+                {
+                    Console.WriteLine("OnReset: Cricuito reestablecido");
+                });
 
-        private static readonly AsyncCircuitBreakerPolicy<bool>
-                         basicCircuitBreakerPolicy = Policy.HandleResult<bool>(r => r == false)
-                             .CircuitBreakerAsync(handledEventsAllowedBeforeBreaking: 2, durationOfBreak: TimeSpan.FromMinutes(5));
+        private static readonly AsyncRetryPolicy _retryPolicy = Policy
+                .Handle<Exception>()
+                .WaitAndRetryAsync(2, retryAttempt => {
+                    var timeToWait = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                    Console.WriteLine($"Waiting {timeToWait.TotalSeconds} seconds");
+                    return timeToWait;
+                }
+                );
 
 
 
@@ -30,6 +45,7 @@ namespace Infraestructure.Services
             _notificationMetadata = notificationMetadata;
             _smtpClient = smtpClient;
             _notIficationService = notificationService;
+
         }
         public async Task<MimeMessage> CreateMimeMessageFromEmailMessage(EmailMessage message)
         {
@@ -45,73 +61,64 @@ namespace Infraestructure.Services
 
         public async Task<NotificationResponse> SendEmail(EmailMessage message)
         {
-            var notificationRespose = new NotificationResponse();
+
+            var notificationRespose = new NotificationResponse
+            {
+                statusCode = "1",
+                message = "Email sent Error"
+            };
+
             try
             {
-
-                var mimeMessage = await CreateMimeMessageFromEmailMessage(message);
-
-                try {
-                    await _smtpClient.ConnectAsync(_notificationMetadata.SmtpServer,
-                    _notificationMetadata.Port, false);
-                    await _smtpClient.AuthenticateAsync(_notificationMetadata.UserName,
-                    _notificationMetadata.Password);
-
-                }
-                catch (Exception) { 
-
-                }
-                await basicCircuitBreakerPolicy.ExecuteAsync(async () =>
-                 {
-                     return await Task.FromResult(_smtpClient.IsConnected);
-                 });
-
-                if (basicCircuitBreakerPolicy.CircuitState == 0)
+                Console.WriteLine($"Estado del circuito: {_circuitBreakerPolicy.CircuitState}");
+                await _circuitBreakerPolicy.ExecuteAsync(async () => 
                 {
-                    await _smtpClient.SendAsync(mimeMessage);
-                    await _smtpClient.DisconnectAsync(true);
+                    try
+                    {
+                        var mimeMessage = await CreateMimeMessageFromEmailMessage(message);
 
-                    notificationRespose.statusCode = "0";
-                    notificationRespose.message = "Email sent successfully";
-                }
-                else
-                {
+                        await _smtpClient.ConnectAsync(_notificationMetadata.SmtpServer,
+                        _notificationMetadata.Port, false);
+                        await _smtpClient.AuthenticateAsync(_notificationMetadata.UserName,
+                        _notificationMetadata.Password);
 
-                    notificationRespose.statusCode = "1";
-                    notificationRespose.message = "Email sent Error";
-                }
+                        await _smtpClient.SendAsync(mimeMessage);
 
+                        notificationRespose.statusCode = "0";
+                        notificationRespose.message = "Email sent successfully";
+                    }
+                    finally
+                    {
+                        await _smtpClient.DisconnectAsync(true);
+                    }
+                });
             }
-            catch (Exception)
+            catch(Exception ex)
             {
-
-                notificationRespose.statusCode = "1";
-                notificationRespose.message = "Email sent Error";
+                Console.WriteLine($"Erro al enviar correo: {ex.Message}");
             }
             finally
             {
-                await _smtpClient.DisconnectAsync(true);
+                var newNotification = new ApplicationCore.DTO.Notification
+                {
+                    Message = message.Content,
+                    status = notificationRespose.statusCode,
+                    Type = "E",
+                    Reciever = message.Reciever,
+                    DateNotification = DateTime.UtcNow.ToLocalTime()
+                };
+
+                await persistNotification(newNotification);
             }
 
-            var newNotification = new ApplicationCore.DTO.Notification
-            {
-                Message = message.Content,
-                status = notificationRespose.statusCode,
-                Type = "E",
-                Reciever = message.Reciever,
-                DateNotification = DateTime.UtcNow.ToLocalTime()
-            };
-
-             await persistNotification(newNotification);
-
             return notificationRespose;
-
         }
 
         public async Task<Notification> persistNotification(ApplicationCore.DTO.Notification newNotification) {
             try
             {
-                newNotification = await _notIficationService.CreateNotificationAsync(newNotification);
+                newNotification = await _retryPolicy.ExecuteAsync(async () => await _notIficationService.CreateNotificationAsync(newNotification));
+                
             }
             catch (Exception ex) {
 
